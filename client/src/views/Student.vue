@@ -29,14 +29,50 @@
       <div class="dialog" v-if="!isReady">
         <div class="content">
           <h4>Please enter your name</h4>
-          <input type="text" v-model="studentName" placeholder="John Smith">
+          <input type="text" v-model="studentName" placeholder="John Smith" />
           <button @click.prevent="startSession">Start</button>
         </div>
       </div>
-
       <div class="question" v-if="this.activeQuestion">
         <div class="content">
-          A question came in!
+          <div class="multiple" v-if="(questionType = 'multiple')">
+            <div class="qContent">
+              Time remaining
+              <p id="time">{{ time }}</p>
+            </div>
+            <h3>Multiple Choice</h3>
+            <p id="score">{{ questionScore }} Points</p>
+            <div
+              class="answers"
+              v-for="element in activeQuestion"
+              :key="element.page"
+            >
+              <h2>{{ element.question }}</h2>
+              <div v-for="anws in element.answers" :key="anws.page">
+                <ul class="checkbox-grid">
+                  <li>
+                    <input type="checkbox" v-model="anws.correct" />
+                    <label :for="anws.text">{{ anws.text }}</label>
+                  </li>
+                </ul>
+              </div>
+            </div>
+            <div class="submitAnswer">
+              <button @click.prevent="answerToTeacher" class="submitBtn">
+                Submit answer
+              </button>
+            </div>
+          </div>
+          <div v-else>
+            <h4>Matching Pair</h4>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div>
+          <h1>Results</h1>
+          <p>{{ studentResult }}</p>
         </div>
       </div>
     </form>
@@ -47,8 +83,8 @@
 export default {
   sockets: {
     connect() {
-      console.log('Student.vue: socket connected');
-    }
+      console.log("Student.vue: socket connected");
+    },
   },
   data() {
     return {
@@ -57,35 +93,61 @@ export default {
       statusText: "Waiting for a question...",
       leaderboardScores: [],
       activeQuestion: null,
-    }
+      time: 30,
+      answerContent: null,
+      studentResult: false,
+    };
   },
   computed: {
     isReady() {
       return this.ready;
-    }
+    },
   },
   methods: {
     startSession() {
       this.ready = true;
-      this.$socket.emit('student-registered', {studentName: this.studentName});
-
-      this.sockets.subscribe('teacher-new-question', (data) => {
-        this.activeQuestion = data.question;
+      this.$socket.emit("student-registered", {
+        studentName: this.studentName,
       });
 
-      // You want to also "unsubscribe" when the user 
-      // disconnects, or the component is destroyed.
+      this.sockets.subscribe("teacher-new-question", (data) => {
+        (this.activeQuestion = data.question),
+          (this.questionTime = data.question.questionTime),
+          (this.questionScore = data.question.questionScore),
+          (this.questionType = data.question.questionType);
+      });
 
-    }
+      this.sockets.subscribe("teacher-marked-quiz", (data) => {
+        this.studentResult = data.studentResult;
+      });
+      // You want to also "unsubscribe" when the user
+      // disconnects, or the component is destroyed.
+    },
+    answerToTeacher() {
+      this.$socket.emit("student-answer", {
+        answerContent: this.activeQuestion.questionContent.answers,
+      });
+    },
+  },
+  watch: {
+    time: {
+      handler(questionTime) {
+        if (questionTime > 0) {
+          setTimeout(() => {
+            this.time--;
+          }, 1000);
+        }
+      },
+      immediate: true,
+    },
   },
   destroyed() {
     // this.sockets.unsubscribe('teacher-new-question');
-  }
-}
+  },
+};
 </script>
 
 <style scoped>
-
 .question,
 .dialog {
   position: absolute;
@@ -103,11 +165,13 @@ export default {
 .dialog .content {
   padding: 30px;
   width: 70%;
-  max-width: 500px;
+  height: 40%;
+  max-width: 800px;
+  max-height: 1000px;
   border: 1px solid rgba(0, 0, 0, 0.4);
   border-radius: 10px;
   box-shadow: -10px 10px 20px -10px rgba(0, 0, 0, 0.2);
-  background: white;
+  background: rgb(206, 206, 206);
   text-align: center;
 }
 
@@ -120,4 +184,55 @@ export default {
   margin: 10px 0;
 }
 
+.multiple h2,
+h3,
+.answers {
+  text-align: left;
+}
+
+.multiple label {
+  font-size: 18px;
+  padding-left: 0.5em;
+  text-align: left;
+}
+
+.multiple li {
+  float: left;
+  width: 25%;
+}
+.multiple ul {
+  list-style-type: none;
+}
+
+.submitBtn {
+  margin: 60px 0 0 0;
+}
+
+.submitAnswer {
+  position: relatve;
+}
+
+.qContent {
+  padding: 5px;
+  width: 10%;
+  border: 1px solid rgba(0, 0, 0, 0.4);
+  border-radius: 10px;
+  box-shadow: -10px 10px 20px -10px rgba(0, 0, 0, 0.2);
+  background: rgb(214, 246, 255);
+  position: static;
+  float: right;
+  overflow: hidden;
+}
+
+#score {
+  font-size: 20px;
+  text-align: left;
+  color: red;
+  font-weight: bold;
+}
+#time {
+  font-size: 20px;
+  color: red;
+  font-weight: bold;
+}
 </style>
