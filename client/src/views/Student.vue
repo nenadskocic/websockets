@@ -33,6 +33,7 @@
           <button @click.prevent="startSession">Start</button>
         </div>
       </div>
+
       <div class="question" v-if="this.activeQuestion">
         <div class="content">
           <div class="multiple" v-if="(questionType = 'multiple')">
@@ -69,11 +70,8 @@
         </div>
       </div>
 
-      <div>
-        <div>
-          <h1>Results</h1>
-          <p>{{ studentResult }}</p>
-        </div>
+      <div class="result" v-if="studentFlag">
+        <h2>Please see teacher for your result!</h2>
       </div>
     </form>
   </div>
@@ -94,7 +92,7 @@ export default {
       leaderboardScores: [],
       activeQuestion: null,
       time: 30,
-      answerContent: null,
+      studentFlag: false,
       studentResult: false,
     };
   },
@@ -127,6 +125,7 @@ export default {
       this.$socket.emit("student-answer", {
         answerContent: this.activeQuestion.questionContent.answers,
       });
+      this.studentFlag = true;
     },
   },
   watch: {
@@ -149,7 +148,8 @@ export default {
 
 <style scoped>
 .question,
-.dialog {
+.dialog,
+.result {
   position: absolute;
   left: 0;
   right: 0;
@@ -162,7 +162,8 @@ export default {
 }
 
 .question .content,
-.dialog .content {
+.dialog .content,
+.result .content {
   padding: 30px;
   width: 70%;
   height: 40%;
