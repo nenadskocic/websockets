@@ -69,19 +69,63 @@
           </div>
         </div>
       </div>
-
-      <div class="result" v-if="studentFlag">
-        <h2>Please see teacher for your result!</h2>
-      </div>
     </form>
+
+    <div class="result" v-if="studentAnswered">
+      <div class="content">
+        <div class="qContent">
+          Time remaining
+          <p id="time">{{ time }}</p>
+        </div>
+        <h3>Results</h3>
+        <div v-for="result in studentAnswer" :key="result.page">
+          <div
+            v-if="
+              JSON.stringify(result.answerContent.answerContent) ===
+              JSON.stringify(originalQuestion.questionContent.answers)
+            "
+          >
+            <h2>Correct answer!</h2>
+            <div class="scoreContent">
+              <p>Your current score</p>
+              <h2>{{ parseInt(score + questionScore) }}</h2>
+            </div>
+          </div>
+          <div v-else>
+            <h2 id="incorrect">Incorrect answer!</h2>
+            <h3>Correct answer was:</h3>
+            <div
+              v-for="originalContent in originalQuestion.questionContent"
+              :key="originalContent.page"
+            >
+              <div v-for="incorrect in originalContent" :key="incorrect.page">
+                <div v-if="incorrect.correct === true" id="incorrectList">
+                  <li>{{ incorrect.text }}</li>
+                </div>
+              </div>
+            </div>
+            <div class="scoreContent">
+              <p>Your current score</p>
+              <h4>{{ parseInt(score + questionScore) }}</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
+import _ from "lodash";
+
 export default {
   sockets: {
     connect() {
       console.log("Student.vue: socket connected");
+
+      this.sockets.subscribe("student-answer", (data) => {
+        this.studentAnswer.push(data);
+      });
     },
   },
   data() {
@@ -92,8 +136,10 @@ export default {
       leaderboardScores: [],
       activeQuestion: null,
       time: 30,
-      studentFlag: false,
-      studentResult: false,
+      studentAnswered: false,
+      studentAnswer: [],
+      originalQuestion: [],
+      score: 0,
     };
   },
   computed: {
@@ -112,11 +158,8 @@ export default {
         (this.activeQuestion = data.question),
           (this.questionTime = data.question.questionTime),
           (this.questionScore = data.question.questionScore),
-          (this.questionType = data.question.questionType);
-      });
-
-      this.sockets.subscribe("teacher-marked-quiz", (data) => {
-        this.studentResult = data.studentResult;
+          (this.questionType = data.question.questionType),
+          (this.originalQuestion = _.cloneDeep(this.activeQuestion));
       });
       // You want to also "unsubscribe" when the user
       // disconnects, or the component is destroyed.
@@ -125,7 +168,13 @@ export default {
       this.$socket.emit("student-answer", {
         answerContent: this.activeQuestion.questionContent.answers,
       });
-      this.studentFlag = true;
+      this.studentAnswered = true;
+    },
+    increaseScore() {
+      this.score = parseInt(this.score + this.questionScore);
+    },
+    decreaseScore() {
+      this.score = parseInt(this.score - this.questionScore);
     },
   },
   watch: {
@@ -141,7 +190,7 @@ export default {
     },
   },
   destroyed() {
-    // this.sockets.unsubscribe('teacher-new-question');
+    //this.sockets.unsubscribe("teacher-new-question");
   },
 };
 </script>
@@ -166,9 +215,20 @@ export default {
 .result .content {
   padding: 30px;
   width: 70%;
-  height: 40%;
+  height: 50%;
   max-width: 800px;
-  max-height: 1000px;
+  max-height: 1080px;
+  border: 1px solid rgba(0, 0, 0, 0.4);
+  border-radius: 10px;
+  box-shadow: -10px 10px 20px -10px rgba(0, 0, 0, 0.2);
+  background: rgb(206, 206, 206);
+  text-align: center;
+}
+
+.dialog .content {
+  padding: 30px;
+  width: 70%;
+  height: 20%;
   border: 1px solid rgba(0, 0, 0, 0.4);
   border-radius: 10px;
   box-shadow: -10px 10px 20px -10px rgba(0, 0, 0, 0.2);
@@ -191,6 +251,10 @@ h3,
   text-align: left;
 }
 
+.result h2,
+h3 {
+  text-align: left;
+}
 .multiple label {
   font-size: 18px;
   padding-left: 0.5em;
@@ -215,13 +279,25 @@ h3,
 
 .qContent {
   padding: 5px;
-  width: 10%;
+  width: 20%;
   border: 1px solid rgba(0, 0, 0, 0.4);
   border-radius: 10px;
   box-shadow: -10px 10px 20px -10px rgba(0, 0, 0, 0.2);
   background: rgb(214, 246, 255);
   position: static;
   float: right;
+  overflow: hidden;
+}
+.scoreContent {
+  padding: 5px;
+  width: 20%;
+  border: 1px solid rgba(0, 0, 0, 0.4);
+  border-radius: 10px;
+  box-shadow: -10px 10px 20px -10px rgba(0, 0, 0, 0.2);
+  background: rgb(214, 246, 255);
+  position: static;
+  float: right;
+  top: 0;
   overflow: hidden;
 }
 
@@ -235,5 +311,14 @@ h3,
   font-size: 20px;
   color: red;
   font-weight: bold;
+}
+
+#incorrect {
+  color: red;
+}
+
+#incorrectList li {
+  list-style-type: none;
+  text-align: left;
 }
 </style>

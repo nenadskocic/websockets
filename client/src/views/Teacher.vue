@@ -45,41 +45,6 @@
         <button @click.prevent="poseQuestionToStudents">Post</button>
       </div>
     </div>
-
-    <div class="dialog" v-if="questionPosted">
-      <div class="content" v-if="!answerReceived">
-        <h4>Please submit your answer...</h4>
-        <div v-for="result in studentAnswer" :key="result.page">
-          <h3>Results</h3>
-          <div
-            v-if="
-              JSON.stringify(result.answerContent.answerContent) ===
-              JSON.stringify(questionContent.answers)
-            "
-          >
-            <h2>Correct answer!</h2>
-          </div>
-          <div v-else>
-            <h2 id="incorrect">Incorrect answer!</h2>
-            <p>Correct answer was:</p>
-            <div
-              v-for="originalContent in questionContent"
-              :key="originalContent.page"
-            >
-              <div v-for="incorrect in originalContent" :key="incorrect.page">
-                <div v-if="incorrect.correct === true">
-                  <li>{{ incorrect.text }}</li>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="scoreContent">
-            <p>Your current score</p>
-            <h2>{{ questionScore }}</h2>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -99,10 +64,11 @@ export default {
       this.sockets.subscribe("student-registered", (data) => {
         this.students.push(data);
       });
-
+      /** 
       this.sockets.subscribe("student-answer", (data) => {
         this.studentAnswer.push(data);
       });
+      */
     },
   },
   methods: {
@@ -141,8 +107,8 @@ export default {
       questionContent: null,
       students: [],
       studentAnswer: [],
-      studentResult: false,
-      answerReceived: false,
+      studentResult: true,
+      answerReceived: true,
       correctAnswer: "",
     };
   },
