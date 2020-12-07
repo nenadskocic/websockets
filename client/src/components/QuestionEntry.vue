@@ -42,13 +42,7 @@
         </div>
       </div>
     </div>
-    <!--  
-      Example:
-        How many sides does a hexagon have?   |   6
-        How many sides does a rhombus have?   |   4
-        This lab is lab #?                    |   3
-        Vue.js is a?                          |   framework
-    -->
+
     <div v-show="type == 'matching'">
       <h4>Matching Pairs</h4>
 
