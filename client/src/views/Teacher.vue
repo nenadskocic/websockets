@@ -42,20 +42,62 @@
 
     <div class="row" v-if="isQuestionReady">
       <div class="col-12">
-        <button @click.prevent="poseQuestionToStudents">Post</button>
+        <button @click.prevent="poseQuestionToStudents">
+          Send to students
+        </button>
+      </div>
+    </div>
+
+    <div class="studentResults" v-if="studentFinished">
+      <div class="content">
+        <div class="resultsComp">
+          <p>Time remaining</p>
+          <p>{{ questionTime }}</p>
+        </div>
+        <div class="resultsComp">
+          <p>% correct</p>
+          <p>{{ questionTime }}</p>
+        </div>
+        <div class="resultsComp">
+          <p>Total correct</p>
+          <p>{{ questionTime }}</p>
+        </div>
+        <div class="resultsComp">
+          <p>Total answers</p>
+          <p>{{ questionTime }}</p>
+        </div>
+
+        <div class="resultsTable">
+          <table>
+            <thead>
+              <tr>
+                <th>Correct</th>
+                <th>Incorrect</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
 </template>
-
+<script src="vue-grid-layout.umd.min.js"></script>
 <script>
 import TimeInput from "../components/TimeInput";
 import QuestionEntry from "../components/QuestionEntry";
+import VueGridLayout from "vue-grid-layout";
 
 export default {
   components: {
     TimeInput,
     QuestionEntry,
+    GridLayout: VueGridLayout.GridLayout,
+    GridItem: VueGridLayout.GridItem,
   },
   sockets: {
     connect() {
@@ -64,11 +106,12 @@ export default {
       this.sockets.subscribe("student-registered", (data) => {
         this.students.push(data);
       });
-      /** 
+
       this.sockets.subscribe("student-answer", (data) => {
         this.studentAnswer.push(data);
+
+        this.studentFinished = true;
       });
-      */
     },
   },
   methods: {
@@ -80,13 +123,6 @@ export default {
         questionType: this.questionType, // Type of question (multiple, matching)
       });
       this.questionPosted = true;
-    },
-    sendStudentResults() {
-      this.studentResult = true;
-
-      this.$socket.emit("teacher-marked-quiz", {
-        studentResult: this.studentResult,
-      });
     },
   },
   computed: {
@@ -107,17 +143,29 @@ export default {
       questionContent: null,
       students: [],
       studentAnswer: [],
-      studentResult: true,
       answerReceived: true,
       correctAnswer: "",
+      studentFinished: false,
     };
+  },
+  watch: {
+    time: {
+      handler(questionTime) {
+        if (questionTime > 0) {
+          setTimeout(() => {
+            this.time--;
+          }, 1000);
+        }
+      },
+      immediate: true,
+    },
   },
   mounted() {},
 };
 </script>
 
 <style scoped>
-.dialog {
+.studentResults {
   position: absolute;
   left: 0;
   right: 0;
@@ -129,29 +177,42 @@ export default {
   align-items: center;
 }
 
-.dialog .content {
+.studentResults .content {
   padding: 30px;
   width: 70%;
-  max-width: 500px;
+  height: 70%;
   border: 1px solid rgba(0, 0, 0, 0.4);
   border-radius: 10px;
   box-shadow: -10px 10px 20px -10px rgba(0, 0, 0, 0.2);
-  background: white;
-  text-align: center;
+  background: rgb(206, 206, 206);
 }
-
-#incorrect {
-  color: red;
-}
-
-.scoreContent {
+.resultsComp {
   padding: 5px;
-  width: 30%;
+  width: 20%;
   border: 1px solid rgba(0, 0, 0, 0.4);
   border-radius: 10px;
   box-shadow: -10px 10px 20px -10px rgba(0, 0, 0, 0.2);
   background: rgb(214, 246, 255);
-  float: none;
+  position: static;
+  float: right;
   overflow: hidden;
+  text-align: center;
+  margin-right: 3%;
+}
+
+.resultsTable {
+  padding: 3.5%;
+  width: 90%;
+  height: 65%;
+  border: 1px solid rgba(0, 0, 0, 0.4);
+  border-radius: 10px;
+  box-shadow: -10px 10px 20px -10px rgba(0, 0, 0, 0.2);
+  background: rgb(206, 206, 206);
+  margin: 15% 0 0 3.5%;
+  padding-right: 0%;
+}
+
+table {
+  border: 1px solid rgba(0, 0, 0, 0.4);
 }
 </style>
