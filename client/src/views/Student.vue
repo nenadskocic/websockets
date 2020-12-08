@@ -39,7 +39,7 @@
           <div class="multiple" v-if="(questionType = 'multiple')">
             <div class="qContent">
               Time remaining
-              <p id="time">{{ time }}</p>
+              <p id="time">{{ timer }}</p>
             </div>
             <h3>Multiple Choice</h3>
             <p id="score">{{ questionScore }} Points</p>
@@ -75,7 +75,7 @@
       <div class="content">
         <div class="qContent">
           Time remaining
-          <p id="time">{{ time }}</p>
+          <p id="time">{{ timer }}</p>
         </div>
         <h3>Results</h3>
         <div v-for="result in studentAnswer" :key="result.page">
@@ -106,7 +106,7 @@
             </div>
             <div class="scoreContent">
               <p>Your current score</p>
-              <h4>{{ parseInt(score + questionScore) }}</h4>
+              <h4>{{ parseInt(score - questionScore) }}</h4>
             </div>
           </div>
         </div>
@@ -135,11 +135,12 @@ export default {
       statusText: "Waiting for a question...",
       leaderboardScores: [],
       activeQuestion: null,
-      time: 30,
       studentAnswered: false,
       studentAnswer: [],
       originalQuestion: [],
       score: 0,
+      finished: false,
+      timer: 0,
     };
   },
   computed: {
@@ -150,6 +151,7 @@ export default {
   methods: {
     startSession() {
       this.ready = true;
+
       this.$socket.emit("student-registered", {
         studentName: this.studentName,
       });
@@ -160,6 +162,8 @@ export default {
           (this.questionScore = data.question.questionScore),
           (this.questionType = data.question.questionType),
           (this.originalQuestion = _.cloneDeep(this.activeQuestion));
+
+        this.timer += parseInt(this.questionTime);
       });
       // You want to also "unsubscribe" when the user
       // disconnects, or the component is destroyed.
@@ -178,20 +182,18 @@ export default {
     },
   },
   watch: {
-    time: {
+    timer: {
       handler(questionTime) {
         if (questionTime > 0) {
           setTimeout(() => {
-            this.time--;
+            this.timer--;
           }, 1000);
         }
       },
       immediate: true,
     },
   },
-  destroyed() {
-    //this.sockets.unsubscribe("teacher-new-question");
-  },
+  destroyed() {},
 };
 </script>
 
@@ -299,6 +301,11 @@ h3 {
   float: right;
   top: 0;
   overflow: hidden;
+  text-align: center;
+}
+
+.scoreContent h4 {
+  text-align: center;
 }
 
 #score {
