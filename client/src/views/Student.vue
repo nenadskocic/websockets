@@ -16,7 +16,7 @@
           <h4>Leaderboard</h4>
           <div v-if="leaderboardScores.length == 0">No scores recorded yet</div>
           <div v-else>
-            <div v-for="score in leaderboardScores" :key="score.name">
+            <div v-for="score in leaderboardScores" :key="score.page">
               <div class="row">
                 <div class="col-10">{{ score.studentName }}</div>
                 <div class="col-2">{{ score.scoreCounter }}</div>
@@ -78,30 +78,29 @@
           <p id="time">{{ timer }}</p>
         </div>
         <h3>Results</h3>
-        <div v-for="result in studentAnswer" :key="result.page">
+        <div
+          v-if="
+            JSON.stringify(activeAnswers) ===
+            JSON.stringify(originalQuestion.questionContent.answers)
+          "
+        >
+          <h2>Correct answer!</h2>
+        </div>
+        <div v-else>
+          <h2 id="incorrect">Incorrect answer!</h2>
+          <h3>Correct answer was:</h3>
           <div
-            v-if="
-              JSON.stringify(result.answerContent.answerContent) ===
-              JSON.stringify(originalQuestion.questionContent.answers)
-            "
+            v-for="originalContent in originalQuestion.questionContent"
+            :key="originalContent.page"
           >
-            <h2>Correct answer!</h2>
-          </div>
-          <div v-else>
-            <h2 id="incorrect">Incorrect answer!</h2>
-            <h3>Correct answer was:</h3>
-            <div
-              v-for="originalContent in originalQuestion.questionContent"
-              :key="originalContent.page"
-            >
-              <div v-for="incorrect in originalContent" :key="incorrect.page">
-                <div v-if="incorrect.correct === true" id="incorrectList">
-                  <li>{{ incorrect.text }}</li>
-                </div>
+            <div v-for="incorrect in originalContent" :key="incorrect.page">
+              <div v-if="incorrect.correct === true" id="incorrectList">
+                <li>{{ incorrect.text }}</li>
               </div>
             </div>
           </div>
         </div>
+
         <div class="scoreContent">
           <p>Your current score</p>
           <h2>{{ scoreCounter }}</h2>
@@ -118,20 +117,6 @@ export default {
   sockets: {
     connect() {
       console.log("Student.vue: socket connected");
-
-      this.sockets.subscribe("student-answer", (data) => {
-        this.studentAnswer.push(data);
-        this.studentAnswerContent = data.answerContent.answerContent;
-
-        if (_.isEqual(this.studentAnswerContent, this.originalAnswers)) {
-          this.scoreCounter += parseInt(this.questionScore);
-        } else {
-          this.scoreCounter -= parseInt(this.questionScore);
-        }
-        this.userScores.studentName = this.studentName;
-        this.userScores.scoreCounter = this.scoreCounter;
-        this.leaderboardScores.push(this.userScores);
-      });
     },
   },
   data() {
@@ -144,12 +129,11 @@ export default {
       leaderboardScores: [],
       userScores: { studentName: null, scoreCounter: null },
       activeQuestion: null,
-      studentAnswer: [],
       originalQuestion: [],
       scoreCounter: 0,
       timer: 0,
       originalAnswers: [],
-      studentAnswerContent: [],
+      activeAnswers: [],
     };
   },
   computed: {
@@ -176,6 +160,7 @@ export default {
           (this.questionTime = data.question.questionTime),
           (this.questionScore = data.question.questionScore),
           (this.questionType = data.question.questionType),
+          (this.activeAnswers = this.activeQuestion.questionContent.answers),
           (this.originalQuestion = _.cloneDeep(this.activeQuestion));
         this.originalAnswers = _.cloneDeep(
           this.activeQuestion.questionContent.answers
@@ -188,10 +173,17 @@ export default {
       // disconnects, or the component is destroyed.
     },
     answerToTeacher() {
-      this.$socket.emit("student-answer", {
-        answerContent: this.activeQuestion.questionContent.answers,
-      });
+      if (_.isEqual(this.activeAnswers, this.originalAnswers)) {
+        this.scoreCounter += parseInt(this.questionScore);
+      } else {
+        this.scoreCounter -= parseInt(this.questionScore);
+      }
+
       this.result = true;
+
+      this.userScores.studentName = this.studentName;
+      this.userScores.scoreCounter = this.scoreCounter;
+      this.leaderboardScores.push(this.userScores);
     },
   },
   watch: {
@@ -320,7 +312,7 @@ h3 {
   text-align: center;
 }
 
-.scoreContent h4 {
+.scoreContent h2 {
   text-align: center;
 }
 
