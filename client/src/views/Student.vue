@@ -18,8 +18,8 @@
           <div v-else>
             <div v-for="score in leaderboardScores" :key="score.name">
               <div class="row">
-                <div class="col-10">{{ score.name }}</div>
-                <div class="col-2">{{ score.score }}</div>
+                <div class="col-10">{{ score.studentName }}</div>
+                <div class="col-2">{{ score.scoreCounter }}</div>
               </div>
             </div>
           </div>
@@ -128,6 +128,9 @@ export default {
         } else {
           this.scoreCounter -= parseInt(this.questionScore);
         }
+        this.userScores.studentName = this.studentName;
+        this.userScores.scoreCounter = this.scoreCounter;
+        this.leaderboardScores.push(this.userScores);
       });
     },
   },
@@ -139,6 +142,7 @@ export default {
       studentName: null,
       statusText: "Waiting for a question...",
       leaderboardScores: [],
+      userScores: { studentName: null, scoreCounter: null },
       activeQuestion: null,
       studentAnswer: [],
       originalQuestion: [],
