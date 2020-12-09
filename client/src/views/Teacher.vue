@@ -96,8 +96,6 @@ export default {
   components: {
     TimeInput,
     QuestionEntry,
-    GridLayout: VueGridLayout.GridLayout,
-    GridItem: VueGridLayout.GridItem,
   },
   sockets: {
     connect() {

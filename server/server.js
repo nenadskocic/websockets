@@ -32,12 +32,6 @@ io.on('connection', (socket) => {
 
         io.emit('student-answer', {id: socket.id, answerContent: data});
     });
-
-    socket.on('teacher-marked-quiz', (data) => {
-        console.log("Teacher has marked the quiz", data);
-
-        io.emit('teacher-marked-quiz', {id: socket.id, studentResult: data});
-    });
 });
 
 http.listen(3000, () => {
