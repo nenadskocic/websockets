@@ -34,7 +34,7 @@
         </div>
       </div>
 
-      <div class="question" v-if="this.activeQuestion">
+      <div class="question" v-if="isQuestion">
         <div class="content">
           <div class="multiple" v-if="(questionType = 'multiple')">
             <div class="qContent">
@@ -71,7 +71,7 @@
       </div>
     </form>
 
-    <div class="result" v-if="studentAnswered">
+    <div class="result" v-if="isResult">
       <div class="content">
         <div class="qContent">
           Time remaining
@@ -86,10 +86,6 @@
             "
           >
             <h2>Correct answer!</h2>
-            <div class="scoreContent">
-              <p>Your current score</p>
-              <h2>{{ parseInt(score + questionScore) }}</h2>
-            </div>
           </div>
           <div v-else>
             <h2 id="incorrect">Incorrect answer!</h2>
@@ -104,11 +100,11 @@
                 </div>
               </div>
             </div>
-            <div class="scoreContent">
-              <p>Your current score</p>
-              <h4>{{ parseInt(score - questionScore) }}</h4>
-            </div>
           </div>
+        </div>
+        <div class="scoreContent">
+          <p>Your current score</p>
+          <h2>{{ scoreCounter }}</h2>
         </div>
       </div>
     </div>
@@ -125,27 +121,42 @@ export default {
 
       this.sockets.subscribe("student-answer", (data) => {
         this.studentAnswer.push(data);
+        this.studentAnswerContent = data.answerContent.answerContent;
+
+        if (_.isEqual(this.studentAnswerContent, this.originalAnswers)) {
+          this.scoreCounter += parseInt(this.questionScore);
+        } else {
+          this.scoreCounter -= parseInt(this.questionScore);
+        }
       });
     },
   },
   data() {
     return {
       ready: false,
+      result: false,
+      question: false,
       studentName: null,
       statusText: "Waiting for a question...",
       leaderboardScores: [],
       activeQuestion: null,
-      studentAnswered: false,
       studentAnswer: [],
       originalQuestion: [],
-      score: 0,
-      finished: false,
+      scoreCounter: 0,
       timer: 0,
+      originalAnswers: [],
+      studentAnswerContent: [],
     };
   },
   computed: {
     isReady() {
       return this.ready;
+    },
+    isQuestion() {
+      return this.question;
+    },
+    isResult() {
+      return this.result;
     },
   },
   methods: {
@@ -162,8 +173,12 @@ export default {
           (this.questionScore = data.question.questionScore),
           (this.questionType = data.question.questionType),
           (this.originalQuestion = _.cloneDeep(this.activeQuestion));
+        this.originalAnswers = _.cloneDeep(
+          this.activeQuestion.questionContent.answers
+        );
 
         this.timer += parseInt(this.questionTime);
+        this.question = true;
       });
       // You want to also "unsubscribe" when the user
       // disconnects, or the component is destroyed.
@@ -172,13 +187,7 @@ export default {
       this.$socket.emit("student-answer", {
         answerContent: this.activeQuestion.questionContent.answers,
       });
-      this.studentAnswered = true;
-    },
-    increaseScore() {
-      this.score = parseInt(this.score + this.questionScore);
-    },
-    decreaseScore() {
-      this.score = parseInt(this.score - this.questionScore);
+      this.result = true;
     },
   },
   watch: {
@@ -188,6 +197,9 @@ export default {
           setTimeout(() => {
             this.timer--;
           }, 1000);
+        } else {
+          this.question = false;
+          this.result = false;
         }
       },
       immediate: true,
