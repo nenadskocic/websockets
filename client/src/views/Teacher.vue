@@ -48,46 +48,51 @@
       </div>
     </div>
 
-    <div class="studentResults" v-if="questionPosted">
-      <div class="content" v-for="stats in teacherStats" :key="stats.page">
-        <div class="resultsComp">
-          <p>Time remaining</p>
-          <p>{{ timer }}</p>
-        </div>
-        <div class="resultsComp">
-          <p>% correct</p>
-          <p>{{ stats.teacherStats.percentageCorrect }}</p>
-        </div>
-        <div class="resultsComp">
-          <p>Total correct</p>
-          <p>{{ stats.teacherStats.totalCorrect }}</p>
-        </div>
-        <div class="resultsComp">
-          <p>Total answers</p>
-          <p>{{ stats.teacherStats.totalAnswers }}</p>
-        </div>
+      <div class="studentResults" v-if="questionPosted">
+        <div class="content">
+          <div class="resultsComp">
+            <p>Time remaining</p>
+            <p>{{ this.timer }}</p>
+          </div>
+          <div class="resultsComp">
+            <p>% correct</p>
+            <p>{{ this.percentageCorrect }}</p>
+          </div>
+          <div class="resultsComp">
+            <p>Total correct</p>
+            <p>{{ this.totalCorrect }}</p>
+          </div>
+          <div class="resultsComp">
+            <p>Total Answers</p>
+            <p>{{ this.totalAnswers }}</p>
+          </div>
 
-        <div class="row">
-          <div class="col-6">
-            <div v-for="statsL in teacherStats" :key="statsL.page">
-              <div class="row">
-                <div class="col-10">{{ statsL.teacherStats.studentName }}</div>
+          <div class="row" v-for="statsL in teacherStats" :key="statsL.page">
+            <div class="col-6">
+              <h2>Correct</h2>
+              <div v-if="isStudCorrect">
+                <div class="col-6">{{ statsL.teacherStats.studentName }}</div>
+                <div class="col-2">{{ statsL.teacherStats.scoreCounter }}</div>
+              </div>
+              <div v-else>
+                <div class="col-6">{{ statsL.teacherStats.studentName }}</div>
                 <div class="col-2">{{ statsL.teacherStats.scoreCounter }}</div>
               </div>
             </div>
           </div>
-        </div>
 
-        <div class="submitAnswer" v-if="isReadyNext">
-          <button v-on:click="askAnother">Ask another question</button>
+          <div class="submitAnswer" v-if="isReadyNext">
+            <button v-on:click="askAnother">Ask another question</button>
+          </div>
         </div>
       </div>
-    </div>
   </div>
 </template>
 <script>
 import TimeInput from "../components/TimeInput";
 import QuestionEntry from "../components/QuestionEntry";
+import _ from "lodash";
+
 export default {
   components: {
     TimeInput,
@@ -114,14 +119,19 @@ export default {
 
       this.sockets.subscribe("teacher-result-display", (data) => {
         this.teacherStats.push(data);
-        this.timer += parseInt(data.teacherStats.timer);
+        this.studentName = data.teacherStats.studentName;
+        this.scoreCounter = data.teacherStats.scoreCounter;
+        this.totalAnswers = data.teacherStats.totalAnswers;
+        this.totalCorrect = data.teacherStats.totalCorrect;
+        this.percentageCorrect = data.teacherStats.percentageCorrect;
+        this.isStudCorrect = data.teacherStats.isStudCorrect;
+        this.timer = parseInt(data.teacherStats.timer);
       });
     },
     askAnother() {
       this.questionPosted = false;
       this.readyNext = false;
-      this.socket.removeListener("teacher-new-question", this.handleEvent);
-      this.socket.removeListener("teacher-result-display", this.handleEvent);
+      this.timer = 0;
     },
   },
   computed: {
@@ -190,6 +200,7 @@ export default {
   border-radius: 10px;
   box-shadow: -10px 10px 20px -10px rgba(0, 0, 0, 0.2);
   background: rgb(206, 206, 206);
+  text-align: center;
 }
 .resultsComp {
   padding: 5px;
@@ -207,13 +218,6 @@ export default {
 }
 
 .submitAnswer {
-  position: absolute;
-  float: right;
-  margin-top: 25%;
-  margin-left: 30%;
-}
-
-table {
-  border: 1px solid rgba(0, 0, 0, 0.4);
+  margin-top: 30%;
 }
 </style>
