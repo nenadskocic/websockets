@@ -16,7 +16,7 @@
           <h4>Leaderboard</h4>
           <div v-if="leaderboardScores.length == 0">No scores recorded yet</div>
           <div v-else>
-            <div v-for="score in leaderboardScores" :key="score.name">
+            <div v-for="score in this.leaderboardScores" :key="score.name">
               <div class="row">
                 <div class="col-10">{{ score.studentName }}</div>
                 <div class="col-2">{{ score.scoreCounter }}</div>
@@ -136,6 +136,7 @@ export default {
       totalAnswers: 0,
       totalCorrect: 0,
       percentageCorrect: 0,
+      isStudCorrect: false,
     };
   },
   computed: {
@@ -180,8 +181,10 @@ export default {
       if (_.isEqual(this.activeAnswers, this.originalAnswers)) {
         this.scoreCounter += parseInt(this.questionScore);
         this.totalCorrect += 1;
+        this.isStudCorrect = true;
       } else {
         this.scoreCounter -= parseInt(this.questionScore);
+        this.isStudCorrect = false;
 
         if (this.totalCorrect < 0) {
           this.totalCorrect = 0;
@@ -191,8 +194,8 @@ export default {
       }
 
       this.userScores.studentName = this.studentName;
-      this.userScores.scoreCounter = this.questionScore;
-      this.leaderboardScores.push(this.userScores);
+      this.userScores.scoreCounter = this.scoreCounter;
+      this.leaderboardScores.push(_.cloneDeep(this.userScores));
 
       this.result = true;
 
@@ -207,6 +210,7 @@ export default {
         totalAnswers: this.totalAnswers,
         totalCorrect: this.totalCorrect,
         percentageCorrect: this.percentageCorrect,
+        isStudCorrect: this.isStudCorrect,
         timer: this.timer,
       });
     },
