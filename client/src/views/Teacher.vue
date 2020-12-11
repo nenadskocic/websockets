@@ -48,50 +48,46 @@
       </div>
     </div>
 
-    <div class="studentResults" v-if="studentFinished">
-      <div class="content">
+    <div class="studentResults" v-if="questionPosted">
+      <div class="content" v-for="stats in teacherStats" :key="stats.page">
         <div class="resultsComp">
           <p>Time remaining</p>
-          <p>{{ questionTime }}</p>
+          <p>{{ timer }}</p>
         </div>
         <div class="resultsComp">
           <p>% correct</p>
-          <p>{{ questionTime }}</p>
+          <p>{{ stats.teacherStats.percentageCorrect }}</p>
         </div>
         <div class="resultsComp">
           <p>Total correct</p>
-          <p>{{ questionTime }}</p>
+          <p>{{ stats.teacherStats.totalCorrect }}</p>
         </div>
         <div class="resultsComp">
           <p>Total answers</p>
-          <p>{{ questionTime }}</p>
+          <p>{{ stats.teacherStats.totalAnswers }}</p>
         </div>
 
-        <div class="resultsTable">
-          <table>
-            <thead>
-              <tr>
-                <th>Correct</th>
-                <th>Incorrect</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td></td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="row">
+          <div class="col-6">
+            <div v-for="statsL in teacherStats" :key="statsL.page">
+              <div class="row">
+                <div class="col-10">{{ statsL.teacherStats.studentName }}</div>
+                <div class="col-2">{{ statsL.teacherStats.scoreCounter }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="submitAnswer" v-if="isReadyNext">
+          <button v-on:click="askAnother">Ask another question</button>
         </div>
       </div>
     </div>
   </div>
 </template>
-<script src="vue-grid-layout.umd.min.js"></script>
 <script>
 import TimeInput from "../components/TimeInput";
 import QuestionEntry from "../components/QuestionEntry";
-import VueGridLayout from "vue-grid-layout";
-
 export default {
   components: {
     TimeInput,
@@ -104,23 +100,28 @@ export default {
       this.sockets.subscribe("student-registered", (data) => {
         this.students.push(data);
       });
-
-      this.sockets.subscribe("student-answer", (data) => {
-        this.studentAnswer.push(data);
-
-        this.studentFinished = true;
-      });
     },
   },
   methods: {
     poseQuestionToStudents() {
       this.$socket.emit("teacher-new-question", {
-        questionContent: this.questionContent, // Question and answers to question
-        questionTime: this.questionTime, // Time to answer question
-        questionScore: this.questionScore, // Score for getting question correct
-        questionType: this.questionType, // Type of question (multiple, matching)
+        questionContent: this.questionContent,
+        questionTime: this.questionTime,
+        questionScore: this.questionScore,
+        questionType: this.questionType,
       });
       this.questionPosted = true;
+
+      this.sockets.subscribe("teacher-result-display", (data) => {
+        this.teacherStats.push(data);
+        this.timer += parseInt(data.teacherStats.timer);
+      });
+    },
+    askAnother() {
+      this.questionPosted = false;
+      this.readyNext = false;
+      this.socket.removeListener("teacher-new-question", this.handleEvent);
+      this.socket.removeListener("teacher-result-display", this.handleEvent);
     },
   },
   computed: {
@@ -131,6 +132,9 @@ export default {
         this.questionType != ""
       );
     },
+    isReadyNext() {
+      return this.readyNext;
+    },
   },
   data() {
     return {
@@ -140,18 +144,21 @@ export default {
       questionScore: 0,
       questionContent: null,
       students: [],
-      studentAnswer: [],
-      answerReceived: true,
-      correctAnswer: "",
-      studentFinished: false,
+      teacherStats: [],
+      timer: 0,
+      readyNext: false,
     };
   },
   watch: {
-    time: {
+    timer: {
       handler(questionTime) {
         if (questionTime > 0) {
           setTimeout(() => {
-            this.time--;
+            this.timer--;
+
+            if (this.timer == 0) {
+              this.readyNext = true;
+            }
           }, 1000);
         }
       },
@@ -196,18 +203,14 @@ export default {
   overflow: hidden;
   text-align: center;
   margin-right: 3%;
+  margin-bottom: 5%;
 }
 
-.resultsTable {
-  padding: 3.5%;
-  width: 90%;
-  height: 65%;
-  border: 1px solid rgba(0, 0, 0, 0.4);
-  border-radius: 10px;
-  box-shadow: -10px 10px 20px -10px rgba(0, 0, 0, 0.2);
-  background: rgb(206, 206, 206);
-  margin: 15% 0 0 3.5%;
-  padding-right: 0%;
+.submitAnswer {
+  position: absolute;
+  float: right;
+  margin-top: 25%;
+  margin-left: 30%;
 }
 
 table {

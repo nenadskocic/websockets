@@ -27,10 +27,10 @@ io.on('connection', (socket) => {
         io.emit('teacher-new-question', {id: socket.id, question: data});
     });
 
-    socket.on('student-answer', (data) => {
-        console.log("Student has submitted a response", data);
+    socket.on('teacher-result-display', (data) => {
+        console.log("Teacher has received statistics", data);
 
-        io.emit('student-answer', {id: socket.id, answerContent: data});
+        io.emit('teacher-result-display', {id: socket.id, teacherStats: data});
     });
 });
 

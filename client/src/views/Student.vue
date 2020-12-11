@@ -16,7 +16,7 @@
           <h4>Leaderboard</h4>
           <div v-if="leaderboardScores.length == 0">No scores recorded yet</div>
           <div v-else>
-            <div v-for="score in leaderboardScores" :key="score.page">
+            <div v-for="score in leaderboardScores" :key="score.name">
               <div class="row">
                 <div class="col-10">{{ score.studentName }}</div>
                 <div class="col-2">{{ score.scoreCounter }}</div>
@@ -69,44 +69,43 @@
           </div>
         </div>
       </div>
-    </form>
 
-    <div class="result" v-if="isResult">
-      <div class="content">
-        <div class="qContent">
-          Time remaining
-          <p id="time">{{ timer }}</p>
-        </div>
-        <h3>Results</h3>
-        <div
-          v-if="
-            JSON.stringify(activeAnswers) ===
-            JSON.stringify(originalQuestion.questionContent.answers)
-          "
-        >
-          <h2>Correct answer!</h2>
-        </div>
-        <div v-else>
-          <h2 id="incorrect">Incorrect answer!</h2>
-          <h3>Correct answer was:</h3>
+      <div class="result" v-if="isResult">
+        <div class="content">
+          <div class="qContent">
+            Time remaining
+            <p id="time">{{ timer }}</p>
+          </div>
+          <h3>Results</h3>
           <div
-            v-for="originalContent in originalQuestion.questionContent"
-            :key="originalContent.page"
+            v-if="
+              JSON.stringify(activeAnswers) ===
+              JSON.stringify(originalQuestion.questionContent.answers)
+            "
           >
-            <div v-for="incorrect in originalContent" :key="incorrect.page">
-              <div v-if="incorrect.correct === true" id="incorrectList">
-                <li>{{ incorrect.text }}</li>
+            <h2>Correct answer!</h2>
+          </div>
+          <div v-else>
+            <h2 id="incorrect">Incorrect answer!</h2>
+            <h3>Correct answer was:</h3>
+            <div
+              v-for="originalContent in originalQuestion.questionContent"
+              :key="originalContent.page"
+            >
+              <div v-for="incorrect in originalContent" :key="incorrect.page">
+                <div v-if="incorrect.correct === true" id="incorrectList">
+                  <li>{{ incorrect.text }}</li>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-
-        <div class="scoreContent">
-          <p>Your current score</p>
-          <h2>{{ scoreCounter }}</h2>
+          <div class="scoreContent">
+            <p>Your current score</p>
+            <h2>{{ scoreCounter }}</h2>
+          </div>
         </div>
       </div>
-    </div>
+    </form>
   </div>
 </template>
 
@@ -133,7 +132,10 @@ export default {
       scoreCounter: 0,
       timer: 0,
       originalAnswers: [],
-      activeAnswers: [],
+      activeAnswers: 0,
+      totalAnswers: 0,
+      totalCorrect: 0,
+      percentageCorrect: 0,
     };
   },
   computed: {
@@ -173,17 +175,40 @@ export default {
       // disconnects, or the component is destroyed.
     },
     answerToTeacher() {
+      this.totalAnswers += 1;
+
       if (_.isEqual(this.activeAnswers, this.originalAnswers)) {
         this.scoreCounter += parseInt(this.questionScore);
+        this.totalCorrect += 1;
       } else {
         this.scoreCounter -= parseInt(this.questionScore);
+
+        if (this.totalCorrect < 0) {
+          this.totalCorrect = 0;
+        } else {
+          this.totalCorrect;
+        }
       }
+
+      this.userScores.studentName = this.studentName;
+      this.userScores.scoreCounter = this.questionScore;
+      this.leaderboardScores.push(this.userScores);
 
       this.result = true;
 
-      this.userScores.studentName = this.studentName;
-      this.userScores.scoreCounter = this.scoreCounter;
-      this.leaderboardScores.push(this.userScores);
+      this.percentageCorrect = (this.totalCorrect / this.totalAnswers) * 100;
+
+      this.teacherStatsDisplay();
+    },
+    teacherStatsDisplay() {
+      this.$socket.emit("teacher-result-display", {
+        studentName: this.studentName,
+        scoreCounter: this.scoreCounter,
+        totalAnswers: this.totalAnswers,
+        totalCorrect: this.totalCorrect,
+        percentageCorrect: this.percentageCorrect,
+        timer: this.timer,
+      });
     },
   },
   watch: {
