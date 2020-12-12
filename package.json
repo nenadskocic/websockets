@@ -1,0 +1,22 @@
+{
+  "name": "websockets",
+  "version": "1.0.0",
+  "description": "*Front-end (Vue.js)*",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nenadskocic/websockets.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nenadskocic/websockets/issues"
+  },
+  "homepage": "https://github.com/nenadskocic/websockets#readme",
+  "dependencies": {
+    "lodash": "^4.17.20"
+  }
+}
